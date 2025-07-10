@@ -311,12 +311,54 @@ python exercises/beginner.py
 
 ## Learning Path
 
-1. Start with `examples/basic_operations.py`
-2. Practice with `exercises/beginner.py`
-3. Move to `examples/advanced_queries.py`
-4. Continue with `exercises/intermediate.py`
-5. Explore `examples/transactions.py` and `examples/stored_procedures.py`
-6. Challenge yourself with `exercises/advanced.py`
+### 🎯 **Quick Start (One Command)**
+```bash
+# Run the complete learning path
+./run_learning_path.sh
+```
+
+### 📚 **Step-by-Step Learning**
+1. **Basic Operations**: `python examples/basic_operations.py`
+   - ✅ CRUD operations, data types, basic queries
+2. **Beginner Practice**: `python exercises/beginner.py`
+   - ✅ Customer management, order processing exercises
+3. **Advanced Queries**: `python examples/advanced_queries.py`
+   - ✅ Complex JOINs, subqueries, window functions, analytics
+4. **Intermediate Practice**: `python exercises/intermediate.py`
+   - ✅ Complex analysis, performance optimization
+5. **Transactions**: `python examples/transactions.py`
+   - ✅ ACID properties, transaction safety, isolation levels
+6. **Stored Procedures**: `python examples/stored_procedures.py`
+   - ✅ Database programming, procedures, functions
+7. **Advanced Challenge**: `python exercises/advanced.py`
+   - ✅ Query optimization, data warehousing, design analysis
+
+### 📊 **Progress Tracking**
+- **Beginner** (Steps 1-2): Basic SQL operations
+- **Intermediate** (Steps 3-4): Complex queries and analysis
+- **Advanced** (Steps 5-7): Professional database development
+
+## 🚀 **Quick Commands Reference**
+
+```bash
+# Setup (one-time)
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env  # Edit with your DB credentials
+python create_database.py
+
+# Run complete learning path
+./run_learning_path.sh
+
+# Run individual steps
+python examples/basic_operations.py      # Step 1
+python exercises/beginner.py            # Step 2  
+python examples/advanced_queries.py     # Step 3
+python exercises/intermediate.py        # Step 4
+python examples/transactions.py         # Step 5
+python examples/stored_procedures.py    # Step 6
+python exercises/advanced.py            # Step 7
+```
 
 ## Resources
 
