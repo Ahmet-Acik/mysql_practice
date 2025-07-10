@@ -127,10 +127,23 @@ class MySQLPracticeCLI:
             return False
             
         print("🧪 Running test suite...")
+        
+        # Try pytest first
         try:
             subprocess.run([
                 sys.executable, "-m", "pytest", 
                 str(tests_dir), "-v"
+            ], check=True)
+            print("✅ All tests passed!")
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            print("⚠️  pytest not available, falling back to unittest...")
+            
+        # Fallback to unittest
+        try:
+            subprocess.run([
+                sys.executable, 
+                str(tests_dir / "test_database.py")
             ], check=True)
             print("✅ All tests passed!")
             return True

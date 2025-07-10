@@ -43,6 +43,8 @@ services:
       DB_USER: practice_user
       DB_PASSWORD: practice_password
       DB_NAME: practice_db
+    ports:
+      - "5001:5002"  # API port mapping (host:container)
     volumes:
       - .:/app
     working_dir: /app

@@ -165,7 +165,18 @@ python exercises/advanced.py
 ### 📊 **Step 6: Verification and Testing**
 
 ```bash
-# Run all examples in sequence to verify everything works
+# Quick automated test runner (recommended)
+./run_tests.sh
+
+# Or run specific test types
+./run_tests.sh --docker  # Run tests in Docker
+./run_tests.sh --local   # Run tests locally
+```
+
+**For detailed testing information, see:** 📖 [Testing Guide](docs/testing.md)
+
+```bash
+# Manual verification - run all examples in sequence
 echo "=== COMPLETE LEARNING PATH VERIFICATION ==="
 
 echo "1. Basic Operations:"

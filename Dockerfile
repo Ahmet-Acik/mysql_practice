@@ -20,4 +20,4 @@ RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
 # Default command
-CMD ["python", "-c", "print('MySQL Practice Environment Ready!')"]
+CMD ["python", "api/rest_api.py"]
