@@ -113,8 +113,8 @@ The API includes a beautiful web documentation interface with:
 ### **🔧 Configuration**
 
 #### **Port Configuration**
-- **Docker:** API runs on port 5000 inside container, mapped to 5001 on host
-- **Local:** API runs on port 5000 by default
+- **Docker:** API runs on port 5002 inside container, mapped to 5001 on host
+- **Local:** API runs on port 5002 by default (can be customized)
 
 #### **Environment Variables**
 ```bash
