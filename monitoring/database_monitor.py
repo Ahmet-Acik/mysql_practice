@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional
 import psutil
 from mysql.connector import Error
 
-from config.database import create_connection
+from config.database import MySQLConnection
 
 
 class DatabaseMonitor:
@@ -22,7 +22,12 @@ class DatabaseMonitor:
 
     def __init__(self, log_dir: str = "logs"):
         self.log_dir = Path(log_dir)
-        self.log_dir.mkdir(exist_ok=True)
+        try:
+            self.log_dir.mkdir(exist_ok=True)
+        except Exception as e:
+            print(f"Warning: Could not create log directory {log_dir}: {e}")
+            # Fallback to current directory
+            self.log_dir = Path(".")
 
         # Setup logging
         self.setup_logging()
@@ -113,22 +118,49 @@ class DatabaseMonitor:
         }
 
         try:
-            conn = create_connection()
-            cursor = conn.cursor(dictionary=True)
+            db = MySQLConnection()
+            if not db.connect():
+                raise Error("Failed to connect to database")
 
             # Database status variables
-            cursor.execute("SHOW STATUS")
-            status_vars = {
-                row["Variable_name"]: row["Value"] for row in cursor.fetchall()
-            }
+            status_result = db.execute_query("SHOW STATUS")
+            status_vars = {}
+            if status_result:
+                for row in status_result:
+                    try:
+                        if isinstance(row, dict):
+                            # Handle dictionary format from MySQL connector
+                            if "Variable_name" in row and "Value" in row:
+                                status_vars[row["Variable_name"]] = row["Value"]
+                            # Also handle other possible key formats
+                            elif len(row) >= 2:
+                                keys = list(row.keys())
+                                values = list(row.values())
+                                status_vars[str(keys[0])] = str(values[0])
+                    except (IndexError, KeyError, TypeError, AttributeError):
+                        continue
 
-            # Process list (active connections)
-            cursor.execute("SHOW PROCESSLIST")
-            process_list = cursor.fetchall()
+            # Process list (active connections) - requires PROCESS privilege
+            try:
+                process_result = db.execute_query("SHOW PROCESSLIST")
+                process_list = process_result if process_result else []
+            except Error as e:
+                if "Access denied" in str(e):
+                    self.logger.warning("SHOW PROCESSLIST requires PROCESS privilege")
+                    process_list = []
+                else:
+                    raise
 
-            # InnoDB status
-            cursor.execute("SHOW ENGINE INNODB STATUS")
-            innodb_status = cursor.fetchone()
+            # InnoDB status - requires PROCESS privilege
+            try:
+                db.execute_query("SHOW ENGINE INNODB STATUS")
+                # innodb_result = innodb_result[0] if innodb_result else None
+            except Error as e:
+                if "Access denied" in str(e):
+                    self.logger.warning(
+                        "SHOW ENGINE INNODB STATUS requires PROCESS privilege"
+                    )
+                # innodb_status = None
 
             metrics["database"] = {
                 "connections": int(status_vars.get("Threads_connected", 0)),
@@ -143,14 +175,19 @@ class DatabaseMonitor:
                 "buffer_pool_pages_total": int(
                     status_vars.get("Innodb_buffer_pool_pages_total", 0)
                 ),
+                "status": "connected",
             }
 
-            cursor.close()
-            conn.close()
+            db.disconnect()
 
         except Error as e:
             self.logger.error(f"Failed to collect database metrics: {e}")
             metrics["database"]["error"] = str(e)
+            metrics["database"]["status"] = "disconnected"
+        except Exception as e:
+            self.logger.error(f"Unexpected error collecting database metrics: {e}")
+            metrics["database"]["error"] = str(e)
+            metrics["database"]["status"] = "error"
 
         # System metrics
         try:
@@ -159,7 +196,7 @@ class DatabaseMonitor:
                 "memory_percent": psutil.virtual_memory().percent,
                 "disk_percent": psutil.disk_usage("/").percent,
                 "load_average": (
-                    psutil.getloadavg() if hasattr(psutil, "getloadavg") else None
+                    list(psutil.getloadavg()) if hasattr(psutil, "getloadavg") else None
                 ),
             }
         except Exception as e:
@@ -320,57 +357,63 @@ class QueryProfiler:
         self, query: str, params: Optional[tuple] = None
     ) -> Dict[str, Any]:
         """Profile a single query and return detailed metrics."""
-        conn = create_connection()
-        cursor = conn.cursor()
+        db = MySQLConnection()
+        if not db.connect():
+            return {"error": "Failed to connect to database"}
 
         try:
             # Enable profiling
-            cursor.execute("SET profiling = 1")
+            db.execute_query("SET profiling = 1")
 
             # Execute query with timing
             start_time = time.time()
-            cursor.execute(query, params)
-            results = cursor.fetchall()
+            results = db.execute_query(query, params)
             execution_time = time.time() - start_time
 
             # Get query profile
-            cursor.execute("SHOW PROFILES")
-            profiles = cursor.fetchall()
+            profiles = db.execute_query("SHOW PROFILES")
+            profile_details = []
 
             if profiles:
-                query_id = profiles[-1][0]  # Get last query ID
-                cursor.execute(f"SHOW PROFILE FOR QUERY {query_id}")
-                profile_details = cursor.fetchall()
-            else:
-                profile_details = []
+                query_id = (
+                    profiles[-1].get("Query_ID")
+                    if isinstance(profiles[-1], dict)
+                    else profiles[-1][0]
+                )
+                profile_details = db.execute_query(f"SHOW PROFILE FOR QUERY {query_id}")
 
             # Get execution plan
+            explain_plan = []
             if query.strip().upper().startswith("SELECT"):
-                cursor.execute(f"EXPLAIN {query}", params)
-                explain_plan = cursor.fetchall()
-            else:
-                explain_plan = []
+                try:
+                    explain_plan = db.execute_query(f"EXPLAIN {query}", params)
+                except Exception:
+                    explain_plan = []
 
             profile_result = {
                 "query": query,
                 "execution_time": execution_time,
-                "rows_returned": len(results),
-                "profile_details": profile_details,
-                "explain_plan": explain_plan,
+                "rows_returned": len(results) if results else 0,
+                "profile_details": profile_details or [],
+                "explain_plan": explain_plan or [],
                 "optimization_suggestions": self._get_optimization_suggestions(
-                    query, execution_time, explain_plan
+                    query, execution_time, explain_plan or []
                 ),
             }
 
             # Log the query
-            self.monitor.log_query(query, params, execution_time, len(results))
+            self.monitor.log_query(
+                query, params, execution_time, len(results) if results else 0
+            )
 
             return profile_result
 
         finally:
-            cursor.execute("SET profiling = 0")
-            cursor.close()
-            conn.close()
+            try:
+                db.execute_query("SET profiling = 0")
+            except Exception:
+                pass
+            db.disconnect()
 
     def _get_optimization_suggestions(
         self, query: str, execution_time: float, explain_plan: List
@@ -385,25 +428,37 @@ class QueryProfiler:
 
         # Analyze EXPLAIN plan
         for row in explain_plan:
-            if len(row) >= 5:  # Basic EXPLAIN format check
-                select_type = row[1] if len(row) > 1 else ""
-                key = row[5] if len(row) > 5 else None
-                rows = row[8] if len(row) > 8 else 0
+            try:
+                if isinstance(row, dict):
+                    # Handle dictionary format from MySQL connector
+                    select_type = row.get("select_type", "")
+                    key = row.get("key")
+                    rows_examined = row.get("rows", 0)
+                elif isinstance(row, (list, tuple)) and len(row) >= 5:
+                    # Handle tuple/list format
+                    select_type = str(row[1]) if len(row) > 1 else ""
+                    key = row[5] if len(row) > 5 else None
+                    rows_examined = row[8] if len(row) > 8 else 0
+                else:
+                    continue
 
                 if key is None:
                     suggestions.append(
                         "No index is being used. Consider adding appropriate indexes."
                     )
 
-                if isinstance(rows, int) and rows > 10000:
+                if isinstance(rows_examined, (int, str)) and int(rows_examined) > 10000:
                     suggestions.append(
-                        f"Large number of rows examined ({rows}). Consider adding WHERE clauses or indexes."
+                        f"Large number of rows examined ({rows_examined}). "
+                        "Consider adding WHERE clauses or indexes."
                     )
 
                 if "DEPENDENT SUBQUERY" in str(select_type):
                     suggestions.append(
                         "Dependent subquery detected. Consider rewriting as JOIN."
                     )
+            except (KeyError, ValueError, TypeError, IndexError):
+                continue
 
         # Query pattern analysis
         query_upper = query.upper()
@@ -417,7 +472,8 @@ class QueryProfiler:
 
         if query_upper.count("JOIN") > 3:
             suggestions.append(
-                "Multiple JOINs detected. Verify all joins are necessary and properly indexed."
+                "Multiple JOINs detected. Verify all joins are necessary "
+                "and properly indexed."
             )
 
         return suggestions
@@ -430,7 +486,7 @@ def main():
 
     # Start monitoring
     print("🔍 Starting database monitoring...")
-    monitor_thread = monitor.start_monitoring(interval=30)  # Monitor every 30 seconds
+    monitor.start_monitoring(interval=30)  # Monitor every 30 seconds
 
     try:
         # Let it run for a bit
@@ -447,11 +503,11 @@ def main():
         # Profile a sample query
         profile = profiler.profile_query(
             """
-            SELECT c.name, COUNT(o.id) as order_count, SUM(oi.price * oi.quantity) as total_spent
+            SELECT c.first_name, c.last_name, COUNT(o.order_id) as order_count, 
+                   SUM(o.total_amount) as total_spent
             FROM customers c
-            LEFT JOIN orders o ON c.id = o.customer_id
-            LEFT JOIN order_items oi ON o.id = oi.order_id
-            GROUP BY c.id, c.name
+            LEFT JOIN orders o ON c.customer_id = o.customer_id
+            GROUP BY c.customer_id, c.first_name, c.last_name
             ORDER BY total_spent DESC
             LIMIT 10
         """

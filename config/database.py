@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from mysql.connector import Error
 
 # Load environment variables
-load_dotenv()
+load_dotenv(override=True)
 
 
 class DatabaseConfig:
@@ -118,6 +118,34 @@ class SQLAlchemyConnection:
 
     def __init__(self):
         print("SQLAlchemy support coming soon...")
+
+
+def create_connection():
+    """Create a new database connection and return the connection object."""
+    try:
+        connection = mysql.connector.connect(
+            host=DatabaseConfig.HOST,
+            port=DatabaseConfig.PORT,
+            user=DatabaseConfig.USER,
+            password=DatabaseConfig.PASSWORD,
+            database=DatabaseConfig.DATABASE,
+            autocommit=False,
+        )
+        return connection
+    except Error as e:
+        print(f"Error creating database connection: {e}")
+        return None
+
+
+def get_db_config() -> Dict[str, Any]:
+    """Get database configuration as dictionary."""
+    return {
+        "host": DatabaseConfig.HOST,
+        "port": DatabaseConfig.PORT,
+        "user": DatabaseConfig.USER,
+        "password": DatabaseConfig.PASSWORD,
+        "database": DatabaseConfig.DATABASE,
+    }
 
 
 def test_connection():

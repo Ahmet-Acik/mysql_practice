@@ -513,7 +513,7 @@ class AdvancedAnalytics:
         except Exception as e:
             print(f"Error generating dashboard: {e}")
 
-    def export_analytics_report(self, filename: str = None):
+    def export_analytics_report(self, filename: Optional[str] = None):
         """Export analytics results to JSON."""
         if not filename:
             filename = (
