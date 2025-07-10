@@ -1,0 +1,56 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_practice_db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: practice_db
+      MYSQL_USER: practice_user
+      MYSQL_PASSWORD: practice_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./schemas:/docker-entrypoint-initdb.d:ro
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: mysql_practice_phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: practice_user
+      PMA_PASSWORD: practice_password
+    ports:
+      - "8080:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  python-app:
+    build: .
+    container_name: mysql_practice_app
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: practice_user
+      DB_PASSWORD: practice_password
+      DB_NAME: practice_db
+    volumes:
+      - .:/app
+    working_dir: /app
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: tail -f /dev/null  # Keep container running
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
