@@ -53,8 +53,11 @@ def read_operations():
         # Simple SELECT
         print("1. All categories:")
         categories = db.execute_query("SELECT * FROM categories")
-        for category in categories:
-            print(f"   {category['category_id']}: {category['category_name']}")
+        if categories:
+            for category in categories:
+                print(f"   {category['category_id']}: {category['category_name']}")
+        else:
+            print("   No categories found or connection error")
         
         # SELECT with WHERE clause
         print("\n2. Electronics products:")
@@ -67,8 +70,11 @@ def read_operations():
         """
         
         electronics = db.execute_query(electronics_query, ('Electronics',))
-        for product in electronics:
-            print(f"   {product['product_name']}: ${product['price']} (Stock: {product['stock_quantity']})")
+        if electronics:
+            for product in electronics:
+                print(f"   {product['product_name']}: ${product['price']} (Stock: {product['stock_quantity']})")
+        else:
+            print("   No electronics products found or connection error")
         
         # SELECT with aggregation
         print("\n3. Order statistics:")
@@ -175,8 +181,11 @@ def advanced_queries():
         """
         
         orders = db.execute_query(join_query)
-        for order in orders:
-            print(f"   {order['customer_name']}: Order #{order['order_id']} - ${order['total_amount']} ({order['status']})")
+        if orders:
+            for order in orders:
+                print(f"   {order['customer_name']}: Order #{order['order_id']} - ${order['total_amount']} ({order['status']})")
+        else:
+            print("   No orders found or connection error")
         
         # Subquery
         print("\n2. Customers with orders above average:")
@@ -191,8 +200,11 @@ def advanced_queries():
         """
         
         high_value_customers = db.execute_query(subquery)
-        for customer in high_value_customers:
-            print(f"   {customer['customer_name']}: ${customer['total_amount']}")
+        if high_value_customers:
+            for customer in high_value_customers:
+                print(f"   {customer['customer_name']}: ${customer['total_amount']}")
+        else:
+            print("   No high-value customers found or connection error")
         
         # Group by with having
         print("\n3. Product categories with total revenue:")
@@ -210,8 +222,11 @@ def advanced_queries():
         """
         
         category_revenue = db.execute_query(group_query)
-        for category in category_revenue:
-            print(f"   {category['category_name']}: {category['items_sold']} items, ${category['category_revenue']:.2f}")
+        if category_revenue:
+            for category in category_revenue:
+                print(f"   {category['category_name']}: {category['items_sold']} items, ${category['category_revenue']:.2f}")
+        else:
+            print("   No category revenue data found or connection error")
 
 
 def main():
