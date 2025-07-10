@@ -80,7 +80,14 @@ jobs:
         sed -i 's/DB_PASSWORD=practice_password/DB_PASSWORD=root/' .env
     
     - name: Setup database
+      env:
+        DB_HOST: 127.0.0.1
+        DB_USER: root
+        DB_PASSWORD: root
+        DB_NAME: practice_db
+        DB_PORT: 3306
       run: |
+        echo "🗄️ Setting up database with tables and sample data..."
         python create_database.py
     
     - name: Lint with flake8
