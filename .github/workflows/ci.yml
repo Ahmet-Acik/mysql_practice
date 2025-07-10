@@ -58,9 +58,19 @@ jobs:
     
     - name: Wait for MySQL
       run: |
-        while ! mysqladmin ping -h"127.0.0.1" --silent; do
-            sleep 1
+        echo "Waiting for MySQL to be ready..."
+        for i in {1..30}; do
+          if mysqladmin ping -h"127.0.0.1" -uroot -proot --silent; then
+            echo "✅ MySQL is ready"
+            break
+          fi
+          echo "Waiting for MySQL... ($i/30)"
+          sleep 2
         done
+        
+        # Double-check MySQL status
+        mysqladmin ping -h"127.0.0.1" -uroot -proot
+        mysql -h"127.0.0.1" -uroot -proot -e "SHOW DATABASES;" | grep practice_db || echo "practice_db not found"
     
     - name: Set up environment
       run: |
@@ -111,7 +121,26 @@ jobs:
       continue-on-error: true  # Don't fail on type errors
     
     - name: Test with pytest
+      env:
+        GITHUB_ACTIONS: true
+        DB_HOST: 127.0.0.1
+        DB_USER: root
+        DB_PASSWORD: root
+        DB_NAME: practice_db
+        DB_PORT: 3306
       run: |
+        echo "Testing database connection before pytest..."
+        python -c "
+        from tests.test_config import is_database_available, get_test_db_config
+        config = get_test_db_config()
+        print(f'Database config: {config}')
+        available = is_database_available()
+        print(f'Database available: {available}')
+        if not available:
+            print('Database not available - pytest may fail')
+            exit(1)
+        "
+        echo "Database check passed, running pytest..."
         pytest tests/ -v --cov=. --cov-report=xml
     
     - name: Upload coverage to Codecov
