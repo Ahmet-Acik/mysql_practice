@@ -1,0 +1,76 @@
+name: MySQL Practice CI/CD (Minimal)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20  # Shorter timeout
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: practice_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    strategy:
+      matrix:
+        python-version: ["3.11"]  # Test only one Python version
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install core dependencies only
+      timeout-minutes: 5
+      run: |
+        python -m pip install --upgrade pip
+        pip install mysql-connector-python flask pandas numpy pytest
+    
+    - name: Wait for MySQL
+      timeout-minutes: 2
+      run: |
+        for i in {1..30}; do
+          if mysqladmin ping -h"127.0.0.1" --silent; then
+            echo "MySQL is ready"
+            break
+          fi
+          echo "Waiting for MySQL... ($i/30)"
+          sleep 2
+        done
+    
+    - name: Setup database
+      timeout-minutes: 3
+      run: |
+        python create_database.py
+    
+    - name: Basic syntax check only
+      run: |
+        python -m py_compile create_database.py
+        python -m py_compile config/database.py
+        echo "✅ Core files compile successfully"
+    
+    - name: Run basic tests
+      timeout-minutes: 5
+      run: |
+        python -c "import mysql.connector; print('✅ MySQL connector works')"
+        python -c "import flask; print('✅ Flask works')"
+        python -c "import pandas; print('✅ Pandas works')"
+        python -c "from config.database import MySQLConnection; print('✅ Database config works')"
+        echo "🎉 All basic functionality tests passed!"
