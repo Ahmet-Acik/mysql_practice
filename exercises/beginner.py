@@ -8,23 +8,35 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config.database import MySQLConnection
+from typing import Optional
 
 
 class BeginnerExercises:
     """Beginner level MySQL exercises."""
     
     def __init__(self):
-        self.db = None
+        self.db: Optional[MySQLConnection] = None
     
-    def setup(self):
+    def setup(self) -> bool:
         """Setup database connection."""
-        self.db = MySQLConnection()
-        self.db.connect()
+        try:
+            self.db = MySQLConnection()
+            return self.db.connect()
+        except Exception as e:
+            print(f"Failed to setup database connection: {e}")
+            return False
     
     def cleanup(self):
         """Clean up database connection."""
         if self.db:
             self.db.disconnect()
+    
+    def _check_connection(self) -> bool:
+        """Check if database connection is available."""
+        if not self.db:
+            print("   Error: No database connection")
+            return False
+        return True
     
     def exercise_1_basic_select(self):
         """
@@ -47,6 +59,9 @@ class BeginnerExercises:
         """
         
         try:
+            if not self.db:
+                print("   Error: No database connection")
+                return
             customers = self.db.execute_query(ny_customers_query)
             if customers:
                 for customer in customers:
@@ -67,6 +82,9 @@ class BeginnerExercises:
         """
         
         try:
+            if not self._check_connection():
+                return
+            assert self.db is not None
             products = self.db.execute_query(expensive_products_query)
             if products:
                 for product in products:
@@ -85,6 +103,9 @@ class BeginnerExercises:
         """
         
         try:
+            if not self._check_connection():
+                return
+            assert self.db is not None  # Type checker hint
             result = self.db.execute_query(count_orders_query)
             if result:
                 print(f"   Total orders: {result[0]['total_orders']}")
@@ -112,6 +133,9 @@ class BeginnerExercises:
         """
         
         try:
+            if not self._check_connection():
+                return
+            assert self.db is not None
             rows_affected = self.db.execute_update(
                 insert_category_query, 
                 ('Toys', 'Toys and games for all ages')
@@ -123,6 +147,9 @@ class BeginnerExercises:
         # TODO: Insert a new product
         print("\n2. Inserting new product:")
         # First get the category_id for 'Toys'
+        if not self._check_connection():
+            return
+        assert self.db is not None
         get_category_query = "SELECT category_id FROM categories WHERE category_name = 'Toys'"
         category_result = self.db.execute_query(get_category_query)
         
@@ -145,6 +172,9 @@ class BeginnerExercises:
         
         # TODO: Update product price
         print("\n3. Updating product price:")
+        if not self._check_connection():
+            return
+        assert self.db is not None
         update_price_query = """
         UPDATE products 
         SET price = %s 
@@ -179,6 +209,9 @@ class BeginnerExercises:
         """
         
         try:
+            if not self._check_connection():
+                return
+            assert self.db is not None
             results = self.db.execute_query(products_categories_query)
             if results:
                 for row in results:
@@ -200,6 +233,9 @@ class BeginnerExercises:
         """
         
         try:
+            if not self._check_connection():
+                return
+            assert self.db is not None
             results = self.db.execute_query(customers_orders_query)
             if results:
                 for row in results:
@@ -232,6 +268,9 @@ class BeginnerExercises:
         """
         
         try:
+            if not self._check_connection():
+                return
+            assert self.db is not None
             results = self.db.execute_query(monthly_avg_query)
             if results:
                 for row in results:
@@ -254,6 +293,9 @@ class BeginnerExercises:
         """
         
         try:
+            if not self._check_connection():
+                return
+            assert self.db is not None
             results = self.db.execute_query(bestsellers_query)
             if results:
                 for row in results:
@@ -270,7 +312,9 @@ def main():
     exercises = BeginnerExercises()
     
     try:
-        exercises.setup()
+        if not exercises.setup():
+            print("Failed to connect to database. Please check your configuration.")
+            return
         
         exercises.exercise_1_basic_select()
         exercises.exercise_2_insert_update()
