@@ -3,12 +3,12 @@ MySQL Practice Project - REST API
 Simple REST API using Flask to interact with the MySQL database.
 """
 
-import sys
 import os
-from typing import Optional, Dict, Any, List
-from flask import Flask, jsonify, request, render_template_string
+import sys
+from typing import Optional
+
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-import json
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -17,13 +17,13 @@ from config.database import MySQLConnection
 
 class DatabaseAPI:
     """REST API for database operations."""
-    
+
     def __init__(self):
         self.app = Flask(__name__)
         CORS(self.app)  # Enable CORS for all routes
         self.db: Optional[MySQLConnection] = None
         self.setup_routes()
-    
+
     def get_db(self) -> Optional[MySQLConnection]:
         """Get database connection."""
         if not self.db:
@@ -31,11 +31,11 @@ class DatabaseAPI:
             if not self.db.connect():
                 return None
         return self.db
-    
+
     def setup_routes(self):
         """Setup API routes."""
-        
-        @self.app.route('/')
+
+        @self.app.route("/")
         def index():
             """API documentation page."""
             html = """
@@ -206,79 +206,95 @@ class DatabaseAPI:
             </html>
             """
             return html
-        
-        @self.app.route('/api/stats')
+
+        @self.app.route("/api/stats")
         def get_stats():
             """Get database statistics."""
             db = self.get_db()
             if not db:
                 return jsonify({"error": "Database connection failed"}), 500
-            
+
             try:
                 stats = {}
-                
+
                 # Table counts
-                tables = ['customers', 'products', 'categories', 'orders', 'order_items']
+                tables = [
+                    "customers",
+                    "products",
+                    "categories",
+                    "orders",
+                    "order_items",
+                ]
                 for table in tables:
                     result = db.execute_query(f"SELECT COUNT(*) as count FROM {table}")
-                    stats[f"{table}_count"] = result[0]['count'] if result else 0
-                
+                    stats[f"{table}_count"] = result[0]["count"] if result else 0
+
                 # Recent activity
                 recent_orders = db.execute_query(
                     "SELECT COUNT(*) as count FROM orders WHERE order_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)"
                 )
-                stats['recent_orders_30_days'] = recent_orders[0]['count'] if recent_orders else 0
-                
+                stats["recent_orders_30_days"] = (
+                    recent_orders[0]["count"] if recent_orders else 0
+                )
+
                 # Total revenue
-                revenue = db.execute_query("SELECT SUM(total_amount) as total FROM orders")
-                stats['total_revenue'] = float(revenue[0]['total']) if revenue and revenue[0]['total'] else 0
-                
+                revenue = db.execute_query(
+                    "SELECT SUM(total_amount) as total FROM orders"
+                )
+                stats["total_revenue"] = (
+                    float(revenue[0]["total"]) if revenue and revenue[0]["total"] else 0
+                )
+
                 return jsonify(stats)
-                
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-        
-        @self.app.route('/api/customers')
+
+        @self.app.route("/api/customers")
         def get_customers():
             """Get customers with pagination."""
             db = self.get_db()
             if not db:
                 return jsonify({"error": "Database connection failed"}), 500
-            
+
             try:
-                limit = request.args.get('limit', 50, type=int)
-                offset = request.args.get('offset', 0, type=int)
-                
+                limit = request.args.get("limit", 50, type=int)
+                offset = request.args.get("offset", 0, type=int)
+
                 query = """
                 SELECT customer_id, first_name, last_name, email, city, state
                 FROM customers
                 ORDER BY customer_id
                 LIMIT %s OFFSET %s
                 """
-                
+
                 customers = db.execute_query(query, (limit, offset))
-                
+
                 # Get total count
-                count_result = db.execute_query("SELECT COUNT(*) as total FROM customers")
-                total = count_result[0]['total'] if count_result else 0
-                
-                return jsonify({
-                    "customers": customers or [],
-                    "total": total,
-                    "limit": limit,
-                    "offset": offset
-                })
-                
+                count_result = db.execute_query(
+                    "SELECT COUNT(*) as total FROM customers"
+                )
+                total = count_result[0]["total"] if count_result else 0
+
+                return jsonify(
+                    {
+                        "customers": customers or [],
+                        "total": total,
+                        "limit": limit,
+                        "offset": offset,
+                    }
+                )
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-        
-        @self.app.route('/api/customers/<int:customer_id>')
+
+        @self.app.route("/api/customers/<int:customer_id>")
         def get_customer(customer_id: int):
             """Get customer by ID."""
             db = self.get_db()
             if not db:
                 return jsonify({"error": "Database connection failed"}), 500
-            
+
             try:
                 query = """
                 SELECT customer_id, first_name, last_name, email, phone, 
@@ -286,24 +302,24 @@ class DatabaseAPI:
                 FROM customers
                 WHERE customer_id = %s
                 """
-                
+
                 result = db.execute_query(query, (customer_id,))
-                
+
                 if not result:
                     return jsonify({"error": "Customer not found"}), 404
-                
+
                 return jsonify(result[0])
-                
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-        
-        @self.app.route('/api/customers/<int:customer_id>/orders')
+
+        @self.app.route("/api/customers/<int:customer_id>/orders")
         def get_customer_orders(customer_id: int):
             """Get orders for a customer."""
             db = self.get_db()
             if not db:
                 return jsonify({"error": "Database connection failed"}), 500
-            
+
             try:
                 query = """
                 SELECT o.order_id, o.order_date, o.status, o.total_amount,
@@ -314,65 +330,72 @@ class DatabaseAPI:
                 GROUP BY o.order_id, o.order_date, o.status, o.total_amount
                 ORDER BY o.order_date DESC
                 """
-                
+
                 orders = db.execute_query(query, (customer_id,))
-                
+
                 return jsonify({"orders": orders or []})
-                
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-        
-        @self.app.route('/api/products')
+
+        @self.app.route("/api/products")
         def get_products():
             """Get products with pagination."""
             db = self.get_db()
             if not db:
                 return jsonify({"error": "Database connection failed"}), 500
-            
+
             try:
-                limit = request.args.get('limit', 50, type=int)
-                offset = request.args.get('offset', 0, type=int)
-                category = request.args.get('category')
-                
+                limit = request.args.get("limit", 50, type=int)
+                offset = request.args.get("offset", 0, type=int)
+                category = request.args.get("category")
+
                 base_query = """
                 SELECT p.product_id, p.product_name, p.price, p.stock_quantity,
                        p.sku, c.category_name
                 FROM products p
                 JOIN categories c ON p.category_id = c.category_id
                 """
-                
+
                 if category:
-                    query = base_query + " WHERE c.category_name = %s ORDER BY p.product_name LIMIT %s OFFSET %s"
+                    query = (
+                        base_query
+                        + " WHERE c.category_name = %s ORDER BY p.product_name LIMIT %s OFFSET %s"
+                    )
                     products = db.execute_query(query, (category, limit, offset))
-                    
+
                     count_query = "SELECT COUNT(*) as total FROM products p JOIN categories c ON p.category_id = c.category_id WHERE c.category_name = %s"
                     count_result = db.execute_query(count_query, (category,))
                 else:
                     query = base_query + " ORDER BY p.product_name LIMIT %s OFFSET %s"
                     products = db.execute_query(query, (limit, offset))
-                    
-                    count_result = db.execute_query("SELECT COUNT(*) as total FROM products")
-                
-                total = count_result[0]['total'] if count_result else 0
-                
-                return jsonify({
-                    "products": products or [],
-                    "total": total,
-                    "limit": limit,
-                    "offset": offset,
-                    "category": category
-                })
-                
+
+                    count_result = db.execute_query(
+                        "SELECT COUNT(*) as total FROM products"
+                    )
+
+                total = count_result[0]["total"] if count_result else 0
+
+                return jsonify(
+                    {
+                        "products": products or [],
+                        "total": total,
+                        "limit": limit,
+                        "offset": offset,
+                        "category": category,
+                    }
+                )
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-        
-        @self.app.route('/api/products/<int:product_id>')
+
+        @self.app.route("/api/products/<int:product_id>")
         def get_product(product_id: int):
             """Get product by ID."""
             db = self.get_db()
             if not db:
                 return jsonify({"error": "Database connection failed"}), 500
-            
+
             try:
                 query = """
                 SELECT p.product_id, p.product_name, p.description, p.price, p.stock_quantity,
@@ -381,28 +404,28 @@ class DatabaseAPI:
                 JOIN categories c ON p.category_id = c.category_id
                 WHERE p.product_id = %s
                 """
-                
+
                 result = db.execute_query(query, (product_id,))
-                
+
                 if not result:
                     return jsonify({"error": "Product not found"}), 404
-                
+
                 return jsonify(result[0])
-                
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-        
-        @self.app.route('/api/products/category/<string:category>')
+
+        @self.app.route("/api/products/category/<string:category>")
         def get_products_by_category(category: str):
             """Get products by category."""
             db = self.get_db()
             if not db:
                 return jsonify({"error": "Database connection failed"}), 500
-            
+
             try:
-                limit = request.args.get('limit', 50, type=int)
-                offset = request.args.get('offset', 0, type=int)
-                
+                limit = request.args.get("limit", 50, type=int)
+                offset = request.args.get("offset", 0, type=int)
+
                 query = """
                 SELECT p.product_id, p.product_name, p.price, p.stock_quantity,
                        p.sku, c.category_name
@@ -412,9 +435,9 @@ class DatabaseAPI:
                 ORDER BY p.product_name
                 LIMIT %s OFFSET %s
                 """
-                
+
                 products = db.execute_query(query, (category, limit, offset))
-                
+
                 count_query = """
                 SELECT COUNT(*) as total 
                 FROM products p 
@@ -422,30 +445,32 @@ class DatabaseAPI:
                 WHERE c.category_name = %s
                 """
                 count_result = db.execute_query(count_query, (category,))
-                total = count_result[0]['total'] if count_result else 0
-                
-                return jsonify({
-                    "products": products or [],
-                    "category": category,
-                    "total": total,
-                    "limit": limit,
-                    "offset": offset
-                })
-                
+                total = count_result[0]["total"] if count_result else 0
+
+                return jsonify(
+                    {
+                        "products": products or [],
+                        "category": category,
+                        "total": total,
+                        "limit": limit,
+                        "offset": offset,
+                    }
+                )
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-        
-        @self.app.route('/api/orders')
+
+        @self.app.route("/api/orders")
         def get_orders():
             """Get recent orders."""
             db = self.get_db()
             if not db:
                 return jsonify({"error": "Database connection failed"}), 500
-            
+
             try:
-                limit = request.args.get('limit', 20, type=int)
-                offset = request.args.get('offset', 0, type=int)
-                
+                limit = request.args.get("limit", 20, type=int)
+                offset = request.args.get("offset", 0, type=int)
+
                 query = """
                 SELECT o.order_id, o.order_date, o.status, o.total_amount,
                        c.first_name, c.last_name, c.email,
@@ -458,29 +483,31 @@ class DatabaseAPI:
                 ORDER BY o.order_date DESC
                 LIMIT %s OFFSET %s
                 """
-                
+
                 orders = db.execute_query(query, (limit, offset))
-                
+
                 count_result = db.execute_query("SELECT COUNT(*) as total FROM orders")
-                total = count_result[0]['total'] if count_result else 0
-                
-                return jsonify({
-                    "orders": orders or [],
-                    "total": total,
-                    "limit": limit,
-                    "offset": offset
-                })
-                
+                total = count_result[0]["total"] if count_result else 0
+
+                return jsonify(
+                    {
+                        "orders": orders or [],
+                        "total": total,
+                        "limit": limit,
+                        "offset": offset,
+                    }
+                )
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-        
-        @self.app.route('/api/orders/<int:order_id>')
+
+        @self.app.route("/api/orders/<int:order_id>")
         def get_order(order_id: int):
             """Get order details."""
             db = self.get_db()
             if not db:
                 return jsonify({"error": "Database connection failed"}), 500
-            
+
             try:
                 # Get order info
                 order_query = """
@@ -490,14 +517,14 @@ class DatabaseAPI:
                 JOIN customers c ON o.customer_id = c.customer_id
                 WHERE o.order_id = %s
                 """
-                
+
                 order_result = db.execute_query(order_query, (order_id,))
-                
+
                 if not order_result:
                     return jsonify({"error": "Order not found"}), 404
-                
+
                 order = order_result[0]
-                
+
                 # Get order items
                 items_query = """
                 SELECT oi.order_item_id, oi.quantity, oi.unit_price, oi.total_price,
@@ -508,23 +535,23 @@ class DatabaseAPI:
                 WHERE oi.order_id = %s
                 ORDER BY oi.order_item_id
                 """
-                
+
                 items = db.execute_query(items_query, (order_id,))
-                
-                order['items'] = items or []
-                
+
+                order["items"] = items or []
+
                 return jsonify(order)
-                
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-        
-        @self.app.route('/api/analytics/sales-by-month')
+
+        @self.app.route("/api/analytics/sales-by-month")
         def get_sales_by_month():
             """Get monthly sales analytics."""
             db = self.get_db()
             if not db:
                 return jsonify({"error": "Database connection failed"}), 500
-            
+
             try:
                 query = """
                 SELECT 
@@ -538,24 +565,24 @@ class DatabaseAPI:
                 ORDER BY month DESC
                 LIMIT 12
                 """
-                
+
                 sales_data = db.execute_query(query)
-                
+
                 return jsonify({"monthly_sales": sales_data or []})
-                
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-        
-        @self.app.route('/api/analytics/top-products')
+
+        @self.app.route("/api/analytics/top-products")
         def get_top_products():
             """Get best selling products."""
             db = self.get_db()
             if not db:
                 return jsonify({"error": "Database connection failed"}), 500
-            
+
             try:
-                limit = request.args.get('limit', 10, type=int)
-                
+                limit = request.args.get("limit", 10, type=int)
+
                 query = """
                 SELECT 
                     p.product_name,
@@ -571,21 +598,21 @@ class DatabaseAPI:
                 ORDER BY total_sold DESC
                 LIMIT %s
                 """
-                
+
                 top_products = db.execute_query(query, (limit,))
-                
+
                 return jsonify({"top_products": top_products or []})
-                
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-        
-        @self.app.route('/api/analytics/customer-segments')
+
+        @self.app.route("/api/analytics/customer-segments")
         def get_customer_segments():
             """Get customer segmentation analytics."""
             db = self.get_db()
             if not db:
                 return jsonify({"error": "Database connection failed"}), 500
-            
+
             try:
                 query = """
                 SELECT 
@@ -623,26 +650,26 @@ class DatabaseAPI:
                         WHEN 'New' THEN 4
                     END
                 """
-                
+
                 segments = db.execute_query(query)
-                
+
                 return jsonify({"customer_segments": segments or []})
-                
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-        
-        @self.app.route('/api/search/customers')
+
+        @self.app.route("/api/search/customers")
         def search_customers():
             """Search customers by name or email."""
             db = self.get_db()
             if not db:
                 return jsonify({"error": "Database connection failed"}), 500
-            
+
             try:
-                query_param = request.args.get('q', '').strip()
+                query_param = request.args.get("q", "").strip()
                 if not query_param:
                     return jsonify({"error": "Query parameter 'q' is required"}), 400
-                
+
                 search_query = """
                 SELECT customer_id, first_name, last_name, email, city, state
                 FROM customers
@@ -653,27 +680,29 @@ class DatabaseAPI:
                 ORDER BY last_name, first_name
                 LIMIT 20
                 """
-                
+
                 search_term = f"%{query_param}%"
-                results = db.execute_query(search_query, (search_term, search_term, search_term, search_term))
-                
+                results = db.execute_query(
+                    search_query, (search_term, search_term, search_term, search_term)
+                )
+
                 return jsonify({"customers": results or [], "query": query_param})
-                
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-        
-        @self.app.route('/api/search/products')
+
+        @self.app.route("/api/search/products")
         def search_products():
             """Search products by name or description."""
             db = self.get_db()
             if not db:
                 return jsonify({"error": "Database connection failed"}), 500
-            
+
             try:
-                query_param = request.args.get('q', '').strip()
+                query_param = request.args.get("q", "").strip()
                 if not query_param:
                     return jsonify({"error": "Query parameter 'q' is required"}), 400
-                
+
                 search_query = """
                 SELECT p.product_id, p.product_name, p.price, p.stock_quantity,
                        p.sku, c.category_name
@@ -685,30 +714,32 @@ class DatabaseAPI:
                 ORDER BY p.product_name
                 LIMIT 20
                 """
-                
+
                 search_term = f"%{query_param}%"
-                results = db.execute_query(search_query, (search_term, search_term, search_term))
-                
+                results = db.execute_query(
+                    search_query, (search_term, search_term, search_term)
+                )
+
                 return jsonify({"products": results or [], "query": query_param})
-                
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-        
+
         @self.app.errorhandler(404)
         def not_found(error):
             return jsonify({"error": "Endpoint not found"}), 404
-        
+
         @self.app.errorhandler(500)
         def internal_error(error):
             return jsonify({"error": "Internal server error"}), 500
-    
-    def run(self, host='127.0.0.1', port=5000, debug=True):
+
+    def run(self, host="127.0.0.1", port=5000, debug=True):
         """Run the API server."""
         print(f"🚀 Starting MySQL Practice API...")
         print(f"📍 Server running at: http://{host}:{port}")
         print(f"📖 API Documentation: http://{host}:{port}")
         print(f"🔍 Example: http://{host}:{port}/api/stats")
-        
+
         self.app.run(host=host, port=port, debug=debug)
 
 
@@ -716,7 +747,7 @@ def main():
     """Start the API server."""
     print("🌐 MySQL Practice REST API")
     print("=" * 30)
-    
+
     try:
         # Test database connection first
         db = MySQLConnection()
@@ -726,11 +757,11 @@ def main():
             return
         db.disconnect()
         print("✅ Database connection successful")
-        
+
         # Start API server
         api = DatabaseAPI()
-        api.run(host='0.0.0.0', port=5002, debug=True)
-        
+        api.run(host="0.0.0.0", port=5002, debug=True)
+
     except KeyboardInterrupt:
         print("\n👋 Server stopped by user")
     except ImportError:

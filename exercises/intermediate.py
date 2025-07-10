@@ -3,9 +3,10 @@ Intermediate MySQL Exercises
 Practice intermediate level MySQL operations including complex JOINs, subqueries, and data analysis.
 """
 
-import sys
 import os
+import sys
 from typing import Optional
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config.database import MySQLConnection
@@ -13,10 +14,10 @@ from config.database import MySQLConnection
 
 class IntermediateExercises:
     """Intermediate level MySQL exercises."""
-    
+
     def __init__(self):
         self.db: Optional[MySQLConnection] = None
-    
+
     def setup(self) -> bool:
         """Setup database connection."""
         try:
@@ -25,12 +26,12 @@ class IntermediateExercises:
         except Exception as e:
             print(f"Failed to setup database connection: {e}")
             return False
-    
+
     def cleanup(self):
         """Clean up database connection."""
         if self.db:
             self.db.disconnect()
-    
+
     def _check_connection(self) -> bool:
         """Check if database connection is available."""
         if not self.db:
@@ -41,18 +42,18 @@ class IntermediateExercises:
     def exercise_1_complex_joins(self):
         """
         Exercise 1: Complex JOIN operations
-        
+
         Tasks:
         1. Find customers who haven't placed any orders (LEFT JOIN)
         2. Show products that have never been ordered
         3. Create a sales report with customer, product, and category info
         """
         print("=== Exercise 1: Complex JOINs ===")
-        
+
         if not self._check_connection():
             return
         assert self.db is not None
-        
+
         # Task 1: Customers without orders
         print("\n1. Customers who haven't placed orders:")
         no_orders_query = """
@@ -67,17 +68,19 @@ class IntermediateExercises:
         WHERE o.customer_id IS NULL
         ORDER BY c.last_name, c.first_name
         """
-        
+
         try:
             results = self.db.execute_query(no_orders_query)
             if results:
                 for row in results:
-                    print(f"   {row['customer_name']} ({row['email']}) - {row['city']}, {row['state']}")
+                    print(
+                        f"   {row['customer_name']} ({row['email']}) - {row['city']}, {row['state']}"
+                    )
             else:
                 print("   All customers have placed orders!")
         except Exception as e:
             print(f"   Error: {e}")
-        
+
         # Task 2: Products never ordered
         print("\n2. Products that have never been ordered:")
         no_sales_query = """
@@ -93,21 +96,23 @@ class IntermediateExercises:
         WHERE oi.product_id IS NULL
         ORDER BY c.category_name, p.product_name
         """
-        
+
         try:
             results = self.db.execute_query(no_sales_query)
             if results:
                 current_category = ""
                 for row in results:
-                    if row['category_name'] != current_category:
-                        current_category = row['category_name']
+                    if row["category_name"] != current_category:
+                        current_category = row["category_name"]
                         print(f"\n   {current_category}:")
-                    print(f"     {row['product_name']}: ${row['price']:.2f} (Stock: {row['stock_quantity']})")
+                    print(
+                        f"     {row['product_name']}: ${row['price']:.2f} (Stock: {row['stock_quantity']})"
+                    )
             else:
                 print("   All products have been ordered!")
         except Exception as e:
             print(f"   Error: {e}")
-        
+
         # Task 3: Comprehensive sales report
         print("\n3. Comprehensive sales report:")
         sales_report_query = """
@@ -128,13 +133,17 @@ class IntermediateExercises:
         ORDER BY o.order_date DESC, oi.total_price DESC
         LIMIT 10
         """
-        
+
         try:
             results = self.db.execute_query(sales_report_query)
             if results:
                 for row in results:
-                    print(f"   {row['customer_name']} bought {row['quantity']}x {row['product_name']}")
-                    print(f"     Category: {row['category_name']}, Total: ${row['total_price']:.2f}")
+                    print(
+                        f"   {row['customer_name']} bought {row['quantity']}x {row['product_name']}"
+                    )
+                    print(
+                        f"     Category: {row['category_name']}, Total: ${row['total_price']:.2f}"
+                    )
                     print(f"     Date: {row['order_date']}, Status: {row['status']}")
                     print()
         except Exception as e:
@@ -143,18 +152,18 @@ class IntermediateExercises:
     def exercise_2_subqueries_cte(self):
         """
         Exercise 2: Subqueries and Common Table Expressions
-        
+
         Tasks:
         1. Find customers who spent more than the average customer
         2. Get products with prices higher than the category average
         3. Use a CTE to calculate running totals
         """
         print("\n=== Exercise 2: Subqueries and CTEs ===")
-        
+
         if not self._check_connection():
             return
         assert self.db is not None
-        
+
         # Task 1: High-spending customers
         print("\n1. Customers who spent more than average:")
         high_spenders_query = """
@@ -177,18 +186,20 @@ class IntermediateExercises:
         )
         ORDER BY total_spent DESC
         """
-        
+
         try:
             results = self.db.execute_query(high_spenders_query)
             if results:
                 for row in results:
                     print(f"   {row['customer_name']} ({row['email']})")
                     print(f"     Total Spent: ${row['total_spent']:.2f}")
-                    print(f"     Orders: {row['order_count']}, Avg: ${row['avg_order_value']:.2f}")
+                    print(
+                        f"     Orders: {row['order_count']}, Avg: ${row['avg_order_value']:.2f}"
+                    )
                     print()
         except Exception as e:
             print(f"   Error: {e}")
-        
+
         # Task 2: Products above category average
         print("\n2. Products priced above their category average:")
         above_avg_query = """
@@ -215,18 +226,20 @@ class IntermediateExercises:
         )
         ORDER BY price_difference DESC
         """
-        
+
         try:
             results = self.db.execute_query(above_avg_query)
             if results:
                 for row in results:
                     print(f"   {row['product_name']} ({row['category_name']})")
-                    print(f"     Price: ${row['product_price']:.2f} vs Avg: ${row['category_avg']:.2f}")
+                    print(
+                        f"     Price: ${row['product_price']:.2f} vs Avg: ${row['category_avg']:.2f}"
+                    )
                     print(f"     Difference: +${row['price_difference']:.2f}")
                     print()
         except Exception as e:
             print(f"   Error: {e}")
-        
+
         # Task 3: CTE for running totals (if supported)
         print("\n3. Running sales totals by date:")
         # Note: MySQL 8.0+ supports CTEs, earlier versions don't
@@ -253,13 +266,15 @@ class IntermediateExercises:
         FROM running_totals
         ORDER BY sale_date
         """
-        
+
         try:
             results = self.db.execute_query(cte_query)
             if results:
                 for row in results:
                     print(f"   {row['sale_date']}: ${row['daily_total']:.2f}")
-                    print(f"     Running Total: ${row['running_total']:.2f} ({row['percent_of_total']:.1f}%)")
+                    print(
+                        f"     Running Total: ${row['running_total']:.2f} ({row['percent_of_total']:.1f}%)"
+                    )
         except Exception as e:
             print(f"   Error (CTEs may not be supported in older MySQL): {e}")
             # Fallback without CTE
@@ -276,7 +291,7 @@ class IntermediateExercises:
                 if results:
                     running_total = 0
                     for row in results:
-                        running_total += float(row['daily_total'])
+                        running_total += float(row["daily_total"])
                         print(f"   {row['sale_date']}: ${row['daily_total']:.2f}")
                         print(f"     Running Total: ${running_total:.2f}")
             except Exception as e2:
@@ -285,18 +300,18 @@ class IntermediateExercises:
     def exercise_3_data_analysis(self):
         """
         Exercise 3: Data Analysis and Reporting
-        
+
         Tasks:
         1. Customer segmentation based on spending
         2. Product performance metrics
         3. Seasonal analysis (if applicable)
         """
         print("\n=== Exercise 3: Data Analysis ===")
-        
+
         if not self._check_connection():
             return
         assert self.db is not None
-        
+
         # Task 1: Customer segmentation
         print("\n1. Customer segmentation by spending:")
         segmentation_query = """
@@ -325,17 +340,19 @@ class IntermediateExercises:
         GROUP BY customer_segment
         ORDER BY avg_spent DESC
         """
-        
+
         try:
             results = self.db.execute_query(segmentation_query)
             if results:
                 print("   Segment      | Count | Avg Spent | Min Spent | Max Spent")
                 print("   -------------|-------|-----------|-----------|----------")
                 for row in results:
-                    print(f"   {row['customer_segment']:12} | {row['customer_count']:5d} | ${row['avg_spent']:8.2f} | ${row['min_spent']:8.2f} | ${row['max_spent']:8.2f}")
+                    print(
+                        f"   {row['customer_segment']:12} | {row['customer_count']:5d} | ${row['avg_spent']:8.2f} | ${row['min_spent']:8.2f} | ${row['max_spent']:8.2f}"
+                    )
         except Exception as e:
             print(f"   Error: {e}")
-        
+
         # Task 2: Product performance metrics
         print("\n2. Product performance analysis:")
         performance_query = """
@@ -354,19 +371,25 @@ class IntermediateExercises:
         GROUP BY cat.category_id, cat.category_name
         ORDER BY total_revenue DESC
         """
-        
+
         try:
             results = self.db.execute_query(performance_query)
             if results:
                 for row in results:
                     print(f"   {row['category_name']}:")
-                    print(f"     Products: {row['total_products']} total, {row['products_sold']} sold ({row['sell_through_rate']:.1f}%)")
-                    print(f"     Units Sold: {row['total_units_sold']}, Revenue: ${row['total_revenue']:.2f}")
-                    print(f"     Avg Selling Price: ${row['avg_selling_price']:.2f} vs List: ${row['avg_list_price']:.2f}")
+                    print(
+                        f"     Products: {row['total_products']} total, {row['products_sold']} sold ({row['sell_through_rate']:.1f}%)"
+                    )
+                    print(
+                        f"     Units Sold: {row['total_units_sold']}, Revenue: ${row['total_revenue']:.2f}"
+                    )
+                    print(
+                        f"     Avg Selling Price: ${row['avg_selling_price']:.2f} vs List: ${row['avg_list_price']:.2f}"
+                    )
                     print()
         except Exception as e:
             print(f"   Error: {e}")
-        
+
         # Task 3: Order pattern analysis
         print("\n3. Order pattern analysis:")
         pattern_query = """
@@ -381,14 +404,18 @@ class IntermediateExercises:
         ORDER BY order_count DESC
         LIMIT 10
         """
-        
+
         try:
             results = self.db.execute_query(pattern_query)
             if results:
                 print("   Top Order Times:")
                 for row in results:
-                    print(f"   {row['day_of_week']} {row['hour_of_day']:02d}:00 - {row['order_count']} orders")
-                    print(f"     Avg: ${row['avg_order_value']:.2f}, Total: ${row['total_revenue']:.2f}")
+                    print(
+                        f"   {row['day_of_week']} {row['hour_of_day']:02d}:00 - {row['order_count']} orders"
+                    )
+                    print(
+                        f"     Avg: ${row['avg_order_value']:.2f}, Total: ${row['total_revenue']:.2f}"
+                    )
                     print()
         except Exception as e:
             print(f"   Error: {e}")
@@ -396,21 +423,21 @@ class IntermediateExercises:
     def exercise_4_indexes_performance(self):
         """
         Exercise 4: Database Performance and Indexes
-        
+
         Tasks:
         1. Analyze query performance with EXPLAIN
         2. Identify missing indexes
         3. Create performance improvement suggestions
         """
         print("\n=== Exercise 4: Performance Analysis ===")
-        
+
         if not self._check_connection():
             return
         assert self.db is not None
-        
+
         # Task 1: Query performance analysis
         print("\n1. Query performance analysis:")
-        
+
         # Check for slow queries (simulated)
         slow_query = """
         SELECT 
@@ -426,7 +453,7 @@ class IntermediateExercises:
         AND p.price > 100
         ORDER BY o.order_date DESC
         """
-        
+
         try:
             # Show explain plan
             explain_query = f"EXPLAIN {slow_query}"
@@ -434,10 +461,12 @@ class IntermediateExercises:
             if explain_results:
                 print("   EXPLAIN output for complex query:")
                 for row in explain_results:
-                    print(f"   Table: {row.get('table', 'N/A')}, Type: {row.get('type', 'N/A')}, Rows: {row.get('rows', 'N/A')}")
+                    print(
+                        f"   Table: {row.get('table', 'N/A')}, Type: {row.get('type', 'N/A')}, Rows: {row.get('rows', 'N/A')}"
+                    )
         except Exception as e:
             print(f"   Error analyzing query: {e}")
-        
+
         # Task 2: Index analysis
         print("\n2. Current indexes analysis:")
         index_query = """
@@ -451,33 +480,38 @@ class IntermediateExercises:
         AND TABLE_NAME IN ('customers', 'orders', 'products', 'order_items', 'categories')
         ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX
         """
-        
+
         try:
             results = self.db.execute_query(index_query)
             if results:
                 current_table = ""
                 current_index = ""
                 for row in results:
-                    if row['TABLE_NAME'] != current_table:
-                        current_table = row['TABLE_NAME']
+                    if row["TABLE_NAME"] != current_table:
+                        current_table = row["TABLE_NAME"]
                         print(f"\n   {current_table}:")
-                    
-                    if row['INDEX_NAME'] != current_index:
-                        current_index = row['INDEX_NAME']
-                        unique_text = "UNIQUE" if row['NON_UNIQUE'] == 0 else "NON-UNIQUE"
-                        print(f"     {row['INDEX_NAME']} ({unique_text}): {row['COLUMN_NAME']}", end="")
+
+                    if row["INDEX_NAME"] != current_index:
+                        current_index = row["INDEX_NAME"]
+                        unique_text = (
+                            "UNIQUE" if row["NON_UNIQUE"] == 0 else "NON-UNIQUE"
+                        )
+                        print(
+                            f"     {row['INDEX_NAME']} ({unique_text}): {row['COLUMN_NAME']}",
+                            end="",
+                        )
                     else:
                         print(f", {row['COLUMN_NAME']}", end="")
                 print()  # Final newline
         except Exception as e:
             print(f"   Error: {e}")
-        
+
         # Task 3: Performance recommendations
         print("\n3. Performance improvement suggestions:")
         suggestions = [
             "Consider adding indexes on frequently queried columns:",
             "  - customers(email) for email lookups",
-            "  - orders(order_date) for date range queries", 
+            "  - orders(order_date) for date range queries",
             "  - products(price) for price range queries",
             "  - order_items(product_id, order_id) composite index",
             "",
@@ -485,9 +519,9 @@ class IntermediateExercises:
             "  - Use LIMIT for large result sets",
             "  - Avoid SELECT * in production queries",
             "  - Use proper WHERE clauses to filter early",
-            "  - Consider partitioning large tables by date"
+            "  - Consider partitioning large tables by date",
         ]
-        
+
         for suggestion in suggestions:
             print(f"   {suggestion}")
 
@@ -496,19 +530,19 @@ def main():
     """Run intermediate exercises."""
     print("MySQL Intermediate Exercises")
     print("=" * 35)
-    
+
     exercises = IntermediateExercises()
-    
+
     try:
         if not exercises.setup():
             print("Failed to connect to database. Please check your configuration.")
             return
-        
+
         exercises.exercise_1_complex_joins()
         exercises.exercise_2_subqueries_cte()
         exercises.exercise_3_data_analysis()
         exercises.exercise_4_indexes_performance()
-        
+
     except Exception as e:
         print(f"Error: {e}")
         print("\nMake sure you have:")
@@ -516,7 +550,7 @@ def main():
         print("2. Database and tables created")
         print("3. Sample data loaded")
         print("4. .env file configured")
-        
+
     finally:
         exercises.cleanup()
 

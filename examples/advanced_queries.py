@@ -3,9 +3,10 @@ Advanced MySQL queries examples.
 This module demonstrates complex queries, joins, subqueries, and analytical functions.
 """
 
-import sys
 import os
-from typing import Optional, List, Dict, Any
+import sys
+from typing import Optional
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config.database import MySQLConnection
@@ -13,10 +14,10 @@ from config.database import MySQLConnection
 
 class AdvancedQueries:
     """Advanced MySQL queries demonstrations."""
-    
+
     def __init__(self):
         self.db: Optional[MySQLConnection] = None
-    
+
     def setup(self) -> bool:
         """Setup database connection."""
         try:
@@ -25,12 +26,12 @@ class AdvancedQueries:
         except Exception as e:
             print(f"Failed to setup database connection: {e}")
             return False
-    
+
     def cleanup(self):
         """Clean up database connection."""
         if self.db:
             self.db.disconnect()
-    
+
     def _check_connection(self) -> bool:
         """Check if database connection is available."""
         if not self.db:
@@ -41,11 +42,11 @@ class AdvancedQueries:
     def complex_joins_demo(self):
         """Demonstrate complex JOIN operations."""
         print("=== Complex JOINs ===")
-        
+
         if not self._check_connection():
             return
         assert self.db is not None
-        
+
         # Multi-table JOIN with aggregation
         print("\n1. Customer order summary with product details:")
         complex_join_query = """
@@ -68,14 +69,18 @@ class AdvancedQueries:
         HAVING total_orders > 0
         ORDER BY total_spent DESC
         """
-        
+
         try:
             results = self.db.execute_query(complex_join_query)
             if results:
                 for row in results:
                     print(f"   {row['customer_name']} ({row['email']}):")
-                    print(f"     Orders: {row['total_orders']}, Items: {row['total_items']}")
-                    print(f"     Total Spent: ${row['total_spent']:.2f}, Avg Order: ${row['avg_order_value']:.2f}")
+                    print(
+                        f"     Orders: {row['total_orders']}, Items: {row['total_items']}"
+                    )
+                    print(
+                        f"     Total Spent: ${row['total_spent']:.2f}, Avg Order: ${row['avg_order_value']:.2f}"
+                    )
                     print(f"     Categories: {row['categories_purchased']}")
                     print(f"     Last Order: {row['last_order_date']}")
                     print()
@@ -85,11 +90,11 @@ class AdvancedQueries:
     def subqueries_demo(self):
         """Demonstrate subquery techniques."""
         print("\n=== Subqueries ===")
-        
+
         if not self._check_connection():
             return
         assert self.db is not None
-        
+
         # Correlated subquery
         print("\n1. Products with above-average category prices:")
         correlated_subquery = """
@@ -110,18 +115,20 @@ class AdvancedQueries:
                          WHERE p2.category_id = p1.category_id)
         ORDER BY price_difference DESC
         """
-        
+
         try:
             results = self.db.execute_query(correlated_subquery)
             if results:
                 for row in results:
                     print(f"   {row['product_name']} ({row['category_name']})")
-                    print(f"     Price: ${row['price']:.2f} vs Category Avg: ${row['category_avg_price']:.2f}")
+                    print(
+                        f"     Price: ${row['price']:.2f} vs Category Avg: ${row['category_avg_price']:.2f}"
+                    )
                     print(f"     Difference: +${row['price_difference']:.2f}")
                     print()
         except Exception as e:
             print(f"   Error: {e}")
-        
+
         # EXISTS subquery
         print("\n2. Customers who have ordered from multiple categories:")
         exists_subquery = """
@@ -151,13 +158,15 @@ class AdvancedQueries:
         GROUP BY c.customer_id, c.first_name, c.last_name, c.email
         ORDER BY categories_count DESC
         """
-        
+
         try:
             results = self.db.execute_query(exists_subquery)
             if results:
                 for row in results:
                     print(f"   {row['customer_name']} ({row['email']})")
-                    print(f"     Categories: {row['categories_count']} - {row['categories']}")
+                    print(
+                        f"     Categories: {row['categories_count']} - {row['categories']}"
+                    )
                     print()
             else:
                 print("   No customers found with multi-category orders")
@@ -167,11 +176,11 @@ class AdvancedQueries:
     def window_functions_demo(self):
         """Demonstrate window functions (if supported by MySQL version)."""
         print("\n=== Window Functions ===")
-        
+
         if not self._check_connection():
             return
         assert self.db is not None
-        
+
         # ROW_NUMBER and RANK
         print("\n1. Product ranking by price within categories:")
         window_query = """
@@ -187,21 +196,25 @@ class AdvancedQueries:
         JOIN categories c ON p.category_id = c.category_id
         ORDER BY c.category_name, price_rank
         """
-        
+
         try:
             results = self.db.execute_query(window_query)
             if results:
                 current_category = ""
                 for row in results:
-                    if row['category_name'] != current_category:
-                        current_category = row['category_name']
+                    if row["category_name"] != current_category:
+                        current_category = row["category_name"]
                         print(f"\n   {current_category}:")
-                    
-                    print(f"     #{row['price_rank']} {row['product_name']}: ${row['price']:.2f}")
-                    print(f"         vs avg ${row['category_avg_price']:.2f} ({row['price_vs_avg']:+.2f})")
+
+                    print(
+                        f"     #{row['price_rank']} {row['product_name']}: ${row['price']:.2f}"
+                    )
+                    print(
+                        f"         vs avg ${row['category_avg_price']:.2f} ({row['price_vs_avg']:+.2f})"
+                    )
         except Exception as e:
             print(f"   Error (Window functions may not be supported): {e}")
-        
+
         # Running totals
         print("\n2. Running total of orders by date:")
         running_total_query = """
@@ -214,24 +227,28 @@ class AdvancedQueries:
         FROM orders
         ORDER BY order_date, order_id
         """
-        
+
         try:
             results = self.db.execute_query(running_total_query)
             if results:
                 for row in results:
-                    print(f"   {row['order_date']} Order #{row['order_id']}: ${row['total_amount']:.2f}")
-                    print(f"     Running Total: ${row['running_total']:.2f}, 3-Order Avg: ${row['moving_avg_3']:.2f}")
+                    print(
+                        f"   {row['order_date']} Order #{row['order_id']}: ${row['total_amount']:.2f}"
+                    )
+                    print(
+                        f"     Running Total: ${row['running_total']:.2f}, 3-Order Avg: ${row['moving_avg_3']:.2f}"
+                    )
         except Exception as e:
             print(f"   Error (Window functions may not be supported): {e}")
 
     def analytical_queries_demo(self):
         """Demonstrate analytical and reporting queries."""
         print("\n=== Analytical Queries ===")
-        
+
         if not self._check_connection():
             return
         assert self.db is not None
-        
+
         # Cohort analysis
         print("\n1. Monthly cohort analysis:")
         cohort_query = """
@@ -247,17 +264,23 @@ class AdvancedQueries:
         GROUP BY DATE_FORMAT(order_date, '%Y-%m')
         ORDER BY order_month
         """
-        
+
         try:
             results = self.db.execute_query(cohort_query)
             if results:
-                print("   Month    | Customers | Orders | Revenue  | Avg Order | Min   | Max")
-                print("   ---------|-----------|--------|----------|-----------|-------|-------")
+                print(
+                    "   Month    | Customers | Orders | Revenue  | Avg Order | Min   | Max"
+                )
+                print(
+                    "   ---------|-----------|--------|----------|-----------|-------|-------"
+                )
                 for row in results:
-                    print(f"   {row['order_month']}  |    {row['new_customers']:2d}     |   {row['total_orders']:2d}   | ${row['monthly_revenue']:6.2f} | ${row['avg_order_value']:7.2f} | ${row['min_order']:5.2f} | ${row['max_order']:6.2f}")
+                    print(
+                        f"   {row['order_month']}  |    {row['new_customers']:2d}     |   {row['total_orders']:2d}   | ${row['monthly_revenue']:6.2f} | ${row['avg_order_value']:7.2f} | ${row['min_order']:5.2f} | ${row['max_order']:6.2f}"
+                    )
         except Exception as e:
             print(f"   Error: {e}")
-        
+
         # Product performance analysis
         print("\n2. Product performance analysis:")
         performance_query = """
@@ -282,17 +305,23 @@ class AdvancedQueries:
         GROUP BY p.product_id, p.product_name, c.category_name, p.price, p.stock_quantity
         ORDER BY total_revenue DESC, total_sold DESC
         """
-        
+
         try:
             results = self.db.execute_query(performance_query)
             if results:
                 for row in results:
                     print(f"   {row['product_name']} ({row['category_name']})")
-                    print(f"     Price: ${row['price']:.2f}, Stock: {row['stock_quantity']}")
-                    print(f"     Sold: {row['total_sold']}, Revenue: ${row['total_revenue']:.2f}")
+                    print(
+                        f"     Price: ${row['price']:.2f}, Stock: {row['stock_quantity']}"
+                    )
+                    print(
+                        f"     Sold: {row['total_sold']}, Revenue: ${row['total_revenue']:.2f}"
+                    )
                     print(f"     Category: {row['performance_category']}")
-                    if row['avg_selling_price']:
-                        print(f"     Avg Selling Price: ${row['avg_selling_price']:.2f}")
+                    if row["avg_selling_price"]:
+                        print(
+                            f"     Avg Selling Price: ${row['avg_selling_price']:.2f}"
+                        )
                     print()
         except Exception as e:
             print(f"   Error: {e}")
@@ -300,11 +329,11 @@ class AdvancedQueries:
     def pivot_like_queries_demo(self):
         """Demonstrate pivot-like operations using conditional aggregation."""
         print("\n=== Pivot-like Queries ===")
-        
+
         if not self._check_connection():
             return
         assert self.db is not None
-        
+
         # Category sales by month (pivot-like)
         print("\n1. Category sales by month:")
         pivot_query = """
@@ -323,14 +352,20 @@ class AdvancedQueries:
         GROUP BY DATE_FORMAT(o.order_date, '%Y-%m')
         ORDER BY month
         """
-        
+
         try:
             results = self.db.execute_query(pivot_query)
             if results:
-                print("   Month   | Electronics | Clothing | Books   | Sports  | Home&Garden | Total")
-                print("   --------|-------------|----------|---------|---------|-------------|--------")
+                print(
+                    "   Month   | Electronics | Clothing | Books   | Sports  | Home&Garden | Total"
+                )
+                print(
+                    "   --------|-------------|----------|---------|---------|-------------|--------"
+                )
                 for row in results:
-                    print(f"   {row['month']} | ${row['Electronics']:9.2f} | ${row['Clothing']:6.2f} | ${row['Books']:5.2f} | ${row['Sports']:5.2f} | ${row['Home_Garden']:9.2f} | ${row['Total']:6.2f}")
+                    print(
+                        f"   {row['month']} | ${row['Electronics']:9.2f} | ${row['Clothing']:6.2f} | ${row['Books']:5.2f} | ${row['Sports']:5.2f} | ${row['Home_Garden']:9.2f} | ${row['Total']:6.2f}"
+                    )
         except Exception as e:
             print(f"   Error: {e}")
 
@@ -339,20 +374,20 @@ def main():
     """Run advanced queries demonstrations."""
     print("MySQL Advanced Queries Examples")
     print("=" * 40)
-    
+
     queries = AdvancedQueries()
-    
+
     try:
         if not queries.setup():
             print("Failed to connect to database. Please check your configuration.")
             return
-        
+
         queries.complex_joins_demo()
         queries.subqueries_demo()
         queries.window_functions_demo()
         queries.analytical_queries_demo()
         queries.pivot_like_queries_demo()
-        
+
     except Exception as e:
         print(f"Error: {e}")
         print("\nMake sure you have:")
@@ -360,7 +395,7 @@ def main():
         print("2. Database and tables created")
         print("3. Sample data loaded")
         print("4. .env file configured")
-        
+
     finally:
         queries.cleanup()
 
