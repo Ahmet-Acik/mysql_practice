@@ -1,2 +1,33 @@
+# Core dependencies
 mysql-connector-python==8.2.0
+python-dotenv==1.0.0
+
+# Web framework and API
+Flask==3.0.0
+Flask-CORS==4.0.0
+
+# Data analysis and visualization
+pandas==2.1.4
+matplotlib==3.8.2
+seaborn==0.13.0
+numpy==1.26.2
+
+# System monitoring
+psutil==5.9.6
+
+# Testing
+pytest==7.4.3
+pytest-cov==4.1.0
+
+# Code quality
+black==23.12.1
+flake8==6.1.0
+mypy==1.8.0
+isort==5.13.2
+
+# Jupyter notebooks
+jupyter==1.0.0
+ipykernel==6.27.1
+
+# Development tools
 python-dotenv==1.0.0
