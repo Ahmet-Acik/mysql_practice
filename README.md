@@ -262,6 +262,7 @@ echo "🎓 Skills Mastered: CRUD, JOINs, Subqueries, Transactions, Stored Proced
 mysql_practice/
 ├── requirements.txt          # Python dependencies
 ├── .env.example             # Environment variables template
+├── mysql_practice_notebook.ipynb # Interactive MySQL practice notebook
 ├── config/
 │   └── database.py          # Database connection configuration
 ├── schemas/
@@ -280,6 +281,60 @@ mysql_practice/
     ├── connection.py        # Database connection utilities
     └── helpers.py           # Helper functions
 ```
+
+## 📓 **Interactive MySQL Practice Notebook**
+
+We've created a comprehensive **hands-on MySQL practice notebook** that provides a complete learning experience from beginner to advanced level!
+
+### 🎯 **Access the Notebook:**
+```bash
+# Open in Jupyter Lab (recommended)
+jupyter lab mysql_practice_notebook.ipynb
+
+# Or open in VS Code with Jupyter extension
+code mysql_practice_notebook.ipynb
+
+# Or start Jupyter Notebook
+jupyter notebook mysql_practice_notebook.ipynb
+```
+
+### 🌟 **What's Inside:**
+The notebook contains **12 progressive sections** with:
+- **📖 Clear Instructions** for each MySQL concept
+- **💡 Helpful Tips** and best practices
+- **📝 Empty Code Cells** for hands-on practice
+- **🔧 SQL Examples** and syntax references
+- **✅ Expected Outputs** to guide your learning
+
+### 📚 **Learning Path:**
+1. **📦 Install MySQL Connector** - Setup and configuration
+2. **🔌 Connect to Database** - Establish database connections
+3. **🗃️ Create Database** - Database creation and management
+4. **📋 Create Tables** - Table design with proper relationships
+5. **➕ Insert Data** - Adding sample data with best practices
+6. **🔍 Query Data** - SELECT queries with conditions and sorting
+7. **✏️ Update Data** - Safe data modification techniques
+8. **🗑️ Delete Data** - Safe deletion with proper WHERE clauses
+9. **🔗 Join Tables** - INNER/LEFT joins and relationship queries
+10. **📊 Aggregate Data** - GROUP BY, COUNT, SUM, AVG functions
+11. **🚀 Advanced Queries** - Subqueries, EXISTS, CTEs, window functions
+12. **🔒 Close Connections** - Proper resource cleanup
+
+### 🎓 **Perfect For:**
+- **Beginners** starting with MySQL
+- **Students** learning database concepts
+- **Developers** refreshing SQL skills
+- **Anyone** who prefers interactive learning
+
+### ✨ **Key Features:**
+- **Progressive difficulty** from basic to advanced
+- **Real-world e-commerce database** example
+- **Safety-focused** with warnings about dangerous operations
+- **Complete CRUD** operations coverage
+- **Advanced topics** like subqueries and window functions
+- **Best practices** throughout each section
+
+**🚀 Start your MySQL journey with the interactive notebook!**
 
 ## Topics Covered
 
