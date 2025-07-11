@@ -88,6 +88,23 @@ class MySQLConnection:
             self.connection.rollback()
             return 0
 
+    def execute_update_with_id(
+        self, query: str, params: Optional[tuple] = None
+    ) -> Optional[int]:
+        """Execute INSERT query and return the last inserted ID."""
+        if not self.cursor or not self.connection:
+            print("No database connection available.")
+            return None
+
+        try:
+            self.cursor.execute(query, params or ())
+            self.connection.commit()
+            return self.cursor.lastrowid
+        except Error as e:
+            print(f"Error executing update: {e}")
+            self.connection.rollback()
+            return None
+
     def execute_many(self, query: str, data_list: List[tuple]) -> int:
         """Execute query with multiple data sets."""
         if not self.cursor or not self.connection:

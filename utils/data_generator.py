@@ -259,7 +259,7 @@ class DataGenerator:
         """
 
         try:
-            rows_inserted = self.db.execute_batch_update(insert_query, customers_data)
+            rows_inserted = self.db.execute_many(insert_query, customers_data)
             print(f"✅ Generated {rows_inserted} customers")
             return rows_inserted
         except Exception as e:
@@ -313,7 +313,7 @@ class DataGenerator:
         """
 
         try:
-            rows_inserted = self.db.execute_batch_update(insert_query, products_data)
+            rows_inserted = self.db.execute_many(insert_query, products_data)
             print(f"✅ Generated {rows_inserted} products")
             return rows_inserted
         except Exception as e:
@@ -377,13 +377,12 @@ class DataGenerator:
                     product = random.choice(products)
                     quantity = random.randint(1, 3)
                     unit_price = product["price"]
-                    total_price = unit_price * quantity
-                    order_total += total_price
+                    order_total += unit_price * quantity
 
-                    # Insert order item
+                    # Insert order item (total_price is calculated automatically)
                     item_query = """
-                    INSERT INTO order_items (order_id, product_id, quantity, unit_price, total_price)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+                    VALUES (%s, %s, %s, %s)
                     """
 
                     self.db.execute_update(
@@ -393,7 +392,6 @@ class DataGenerator:
                             product["product_id"],
                             quantity,
                             unit_price,
-                            total_price,
                         ),
                     )
 
@@ -493,6 +491,40 @@ class DataGenerator:
             except Exception as e:
                 print(f"  ❌ Error creating view {view_name}: {e}")
 
+    def generate_categories(self) -> int:
+        """Generate basic product categories."""
+        if not self._check_connection():
+            return 0
+        assert self.db is not None
+
+        print("Generating product categories...")
+
+        categories_data = [
+            ("Electronics", "Electronic devices and accessories"),
+            ("Clothing", "Apparel and fashion items"),
+            ("Home & Garden", "Home improvement and garden supplies"),
+            ("Sports & Outdoors", "Sports equipment and outdoor gear"),
+            ("Books & Media", "Books, movies, music, and digital media"),
+            ("Health & Beauty", "Health, wellness, and beauty products"),
+            ("Toys & Games", "Toys, games, and entertainment"),
+            ("Automotive", "Car parts and automotive accessories"),
+            ("Food & Beverages", "Food, drinks, and kitchen supplies"),
+            ("Office Supplies", "Office equipment and stationery"),
+        ]
+
+        insert_query = """
+        INSERT INTO categories (category_name, description)
+        VALUES (%s, %s)
+        """
+
+        try:
+            rows_inserted = self.db.execute_many(insert_query, categories_data)
+            print(f"✅ Generated {rows_inserted} categories")
+            return rows_inserted
+        except Exception as e:
+            print(f"❌ Error generating categories: {e}")
+            return 0
+
 
 def main():
     """Generate sample data for testing."""
@@ -507,25 +539,29 @@ def main():
             return
 
         print("\nChoose data generation options:")
-        print("1. Generate customers (1000)")
-        print("2. Generate products (500)")
-        print("3. Generate orders (2000)")
-        print("4. Create analytical views")
-        print("5. Generate all data (recommended)")
+        print("1. Generate categories (10)")
+        print("2. Generate customers (1000)")
+        print("3. Generate products (500)")
+        print("4. Generate orders (2000)")
+        print("5. Create analytical views")
+        print("6. Generate all data (recommended)")
         print("0. Exit")
 
-        choice = input("\nEnter your choice (0-5): ").strip()
+        choice = input("\nEnter your choice (0-6): ").strip()
 
         if choice == "1":
-            generator.generate_customers(1000)
+            generator.generate_categories()
         elif choice == "2":
-            generator.generate_products(500)
+            generator.generate_customers(1000)
         elif choice == "3":
-            generator.generate_orders(2000)
+            generator.generate_products(500)
         elif choice == "4":
-            generator.generate_sample_views()
+            generator.generate_orders(2000)
         elif choice == "5":
+            generator.generate_sample_views()
+        elif choice == "6":
             print("\n🚀 Generating complete dataset...")
+            generator.generate_categories()
             generator.generate_customers(1000)
             generator.generate_products(500)
             generator.generate_orders(2000)

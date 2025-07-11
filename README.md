@@ -277,10 +277,73 @@ mysql_practice/
 │   ├── beginner.py          # Beginner level exercises
 │   ├── intermediate.py      # Intermediate level exercises
 │   └── advanced.py          # Advanced level exercises
-└── utils/
-    ├── connection.py        # Database connection utilities
-    └── helpers.py           # Helper functions
+├── utils/
+│   ├── data_generator.py    # Large-scale data generation utility
+│   ├── connection.py        # Database connection utilities
+│   └── helpers.py           # Helper functions
+└── monitoring/
+    └── database_monitor.py  # Database performance monitoring
 ```
+
+## 🏭 **Data Generator - Generate Large Datasets**
+
+For advanced practice and performance testing, we've included a powerful data generator that can create realistic sample data at scale!
+
+### 🚀 **Quick Start:**
+```bash
+# Run the interactive data generator
+python utils/data_generator.py
+
+# Choose from the menu:
+# 1. Generate categories (10)
+# 2. Generate customers (1000) 
+# 3. Generate products (500)
+# 4. Generate orders (2000)
+# 5. Create analytical views
+# 6. Generate all data (recommended)
+```
+
+### 📊 **Data Generator Features:**
+- **🎲 Realistic Data**: Names, addresses, emails, phone numbers
+- **📦 Product Variety**: 20 adjectives × 20 nouns = 400+ unique products
+- **🗃️ Categories**: 10 predefined product categories
+- **📈 Order Simulation**: Random orders with 1-5 items each
+- **📊 Analytical Views**: Pre-built views for business intelligence
+- **⚡ Batch Processing**: Efficient bulk data insertion
+
+### 💾 **Generated Data Scale:**
+- **1,000 Customers** with realistic profiles
+- **500 Products** across 10 categories
+- **2,000 Orders** with order items
+- **5,000+ Order Items** with realistic quantities
+
+### 🔍 **Sample Generated Data:**
+
+**Customers:**
+```
+Joseph Thomas | joseph.thomas392@email.com | Las Vegas, NV
+Mary Johnson | mary.johnson156@email.com | Chicago, IL
+```
+
+**Products:**
+```
+Premium Wireless Device | Electronics | $249.99
+Heavy-Duty Tool Kit | Hardware | $89.95
+```
+
+**Orders:**
+```
+Order #1001 | Customer: John Smith | Total: $459.97 | Status: shipped
+Order #1002 | Customer: Jane Doe | Total: $129.99 | Status: delivered
+```
+
+### 🎯 **Perfect For:**
+- **Performance Testing** - Large datasets for query optimization
+- **Advanced Practice** - Complex JOIN and aggregation scenarios  
+- **Realistic Simulations** - Business analytics and reporting
+- **Scalability Testing** - Test database performance limits
+
+**🚀 Generate realistic data and start practicing with enterprise-scale datasets!**
 
 ## 📓 **Interactive MySQL Practice Notebook**
 
@@ -365,6 +428,9 @@ The notebook contains **12 progressive sections** with:
 ## Running Examples
 
 ```bash
+# Generate sample data first (recommended)
+python utils/data_generator.py
+
 # Run basic operations
 python examples/basic_operations.py
 
@@ -412,6 +478,9 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env  # Edit with your DB credentials
 python create_database.py
+
+# Generate large-scale sample data
+python utils/data_generator.py
 
 # Run complete learning path
 ./run_learning_path.sh
