@@ -42,7 +42,7 @@ class PerformanceBenchmark:
         return True
 
     def benchmark_query(
-        self, name: str, query: str, params: tuple = None, iterations: int = 10
+        self, name: str, query: str, params: Optional[tuple] = None, iterations: int = 10
     ) -> Dict[str, Any]:
         """Benchmark a specific query."""
         if not self._check_connection():
